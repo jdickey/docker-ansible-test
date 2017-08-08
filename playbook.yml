@@ -1,0 +1,30 @@
+---
+- hosts: localhost
+  roles:
+    - common
+
+  tasks:
+  - name: install authorized_keys file
+    authorized_key:
+      exclusive: yes
+      key: https://github.com/jdickey.keys
+      manage_dir: yes
+      user: '{{ remote_user }}'
+
+  # FIXME: `digital_ocean' module gives an error:
+  #        "parameters are mutually exclusive: ['size_id', 'ssh_pub_key']"
+  # WTF? Without an `ssh_pub_key`, the new Droplet won't have `ssh` set up
+  # correctly and, therefore, no way to log in except with a hand-entered
+  # password. FTR, the value of `ssh_pub_key` was `'{{ public_key }}'`.
+  - name: ensure droplet one exists
+    digital_ocean: >
+      state=present
+      command=droplet
+      name=droplet-one
+      size_id=512mb
+      region_id=sgp1
+      image_id=docker-16-04
+      api_token={{ do_token }}
+    register: droplet_one
+
+  - debug: msg="IP is {{ droplet_one.droplet.ip_address }}"
