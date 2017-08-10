@@ -1,30 +1,36 @@
 ---
-- hosts: localhost
+# Reinitialize a Droplet, set up Docker, and get our app running in it
+#
+# Ensure that:
+# 1. An SSH key is present (see `digital_ocean` module docs);
+# 2. A named Droplet exists, waiting for it to be running;
+# 3. The regular user exists;
+# 4. The users `authorized_keys` file exists with correct contents;
+# 5. The `/etc/ssh/sshd_config` file has the correct contents;
+# 6. The SSH daemon is reloaded;
+# 7. The `apt` package cache is updated/upgraded;
+# 8. The `ufw` firewall is configured correctly;
+# 9. Docker is installed and available to the regular user;
+# 10. The desired Docker image has been pulled;
+# 11. The desired Docker image has been started;
+# 12. Content is available from the Web server hosted by the named Droplet;
+# 13. The desired Floating IP already exists;
+# 14. The desired Floating IP is reassigned to the named Droplet;
+# 15. Content is available from the Web server addressed by the Floating IP.
+
+- name: Get a Docker image up and running on a new Droplet
+  hosts: demo2
+  remote_user: '{{ droplet_user_name }}'
+  # become: yes
+  vars:
+    floating_ip: '139.59.220.189'
   roles:
     - common
 
   tasks:
-  - name: install authorized_keys file
-    authorized_key:
-      exclusive: yes
-      key: https://github.com/jdickey.keys
-      manage_dir: yes
-      user: '{{ remote_user }}'
-
-  # FIXME: `digital_ocean' module gives an error:
-  #        "parameters are mutually exclusive: ['size_id', 'ssh_pub_key']"
-  # WTF? Without an `ssh_pub_key`, the new Droplet won't have `ssh` set up
-  # correctly and, therefore, no way to log in except with a hand-entered
-  # password. FTR, the value of `ssh_pub_key` was `'{{ public_key }}'`.
-  - name: ensure droplet one exists
-    digital_ocean: >
-      state=present
-      command=droplet
-      name=droplet-one
-      size_id=512mb
-      region_id=sgp1
-      image_id=docker-16-04
-      api_token={{ do_token }}
-    register: droplet_one
-
-  - debug: msg="IP is {{ droplet_one.droplet.ip_address }}"
+    - name: ensure content is available from the Floating IP host
+      uri:
+        url: "http://{{ floating_ip }}/"
+        return_content: yes
+      register: floating_page
+    - debug: var=floating_page.etag

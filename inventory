@@ -1,4 +1,4 @@
 
-[digitalocean]
-# localhost ansible_connection=local ansible_python_interpreter=python
-localhost ansible_connection=local
+[demos]
+demo1 ansible_ssh_host=128.199.239.243
+demo2 ansible_ssh_host=139.59.115.233
