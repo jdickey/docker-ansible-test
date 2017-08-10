@@ -22,12 +22,22 @@
   hosts: demo2
   remote_user: '{{ droplet_user_name }}'
   # become: yes
+  vars_files:
+    - secret
   vars:
     floating_ip: '139.59.220.189'
+    target_droplet: 56364157
+    target_host: demo2
   roles:
     - common
 
   tasks:
+    - name: ensure Floating IP is assigned to target droplet
+      digital_ocean_floating_ip:
+        ip: '{{ floating_ip }}'
+        droplet_id: '{{ target_droplet }}'
+        oauth_token: '{{ do_token }}'
+
     - name: ensure content is available from the Floating IP host
       uri:
         url: "http://{{ floating_ip }}/"
