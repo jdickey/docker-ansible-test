@@ -32,6 +32,17 @@
     - common
 
   tasks:
+    - name: get Droplet IP address
+      shell: /snap/bin/doctl compute droplet list demo2 -t {{ do_token }} --no-header --format 'PublicIPv4'
+      changed_when: false
+      register: droplet_ip
+
+    - name: ensure content is available from the Droplet IP directly
+      uri:
+        url: "http://{{ droplet_ip.stdout }}/"
+        return_content: yes
+      register: droplet_page
+
     - name: ensure Floating IP is assigned to target droplet
       digital_ocean_floating_ip:
         ip: '{{ floating_ip }}'
@@ -44,3 +55,8 @@
         return_content: yes
       register: floating_page
     - debug: var=floating_page.etag
+
+    - name: verify Floating IP produces same content as Droplet IP
+      assert:
+        that:
+          - "floating_page.etag == droplet_page.etag"
