@@ -32,6 +32,40 @@
     - common
 
   tasks:
+    - name: Configure limited access for tcp/22 via UFW
+      become: yes
+      ufw:
+        log: yes
+        proto: tcp
+        rule: limit
+        port: 22
+    # - name: Configure limited access for ipv6/22 via UFW
+    #   become: yes
+    #   ufw:
+    #     log: yes
+    #     proto: ipv6
+    #     rule: limit
+    #     port: 22
+    - name: Allow access for tcp/2375-2376 via UFW
+      become: yes
+      ufw:
+        log: yes
+        proto: tcp
+        rule: allow
+        port: '2375:2376'
+    # - name: Allow access for ipv6/2375-2376 via UFW
+    #   become: yes
+    #   ufw:
+    #     log: yes
+    #     proto: ipv6
+    #     rule: allow
+    #     port: '2375:2376'
+    - name: Enable the UFW firewall and turn on logging
+      become: yes
+      ufw:
+        state: enabled
+        logging: on
+
     - name: pull Docker image
       shell: docker pull jdickey/grid-demo:dev4
       # docker_image:
