@@ -32,6 +32,28 @@
     - common
 
   tasks:
+    - name: pull Docker image
+      shell: docker pull jdickey/grid-demo:dev4
+      # docker_image:
+      #   name: jdickey/grid-demo:dev4
+
+    - name: ensure Docker container is running
+      docker_container:
+        state: started
+        interactive: yes
+        tty: yes
+        auto_remove: yes
+        exposed_ports: "80"
+        published_ports: "80:80"
+        memory: 64m
+        detach: yes
+        env:
+          REACT_APP_GIT_HASH_FULL: 652828fa5d0b9d09c91a4f2f19d12f259887b17f
+          REACT_APP_GIT_HASH_SHORT: 652828f
+          REACT_APP_IMAGE_TAG: "grid-demo:dev4"
+        image: "jdickey/grid-demo:dev4"
+        name: "automated_insanity"
+
     - name: get Droplet IP address
       shell: /snap/bin/doctl compute droplet list demo2 -t {{ do_token }} --no-header --format 'PublicIPv4'
       changed_when: false
