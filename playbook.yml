@@ -32,6 +32,15 @@
     - common
 
   tasks:
+    - name: Update and upgrade installed software
+      become: yes
+      apt:
+        autoclean: yes
+        autoremove: yes
+        install_recommends: yes
+        update_cache: yes
+        upgrade: full
+
     - name: Configure limited access for tcp/22 via UFW
       become: yes
       ufw:
@@ -65,6 +74,16 @@
       ufw:
         state: enabled
         logging: on
+
+    # Yes, we're presently using a DigitalOcean app image for Docker. That might
+    # not always be the case; this is harmless even when it is.
+    - name: Ensure Docker is installed
+      apt:
+        name: docker-ce
+        install_recommends: yes
+        autoclean: yes
+        autoremove: yes
+        state: present
 
     - name: pull Docker image
       shell: docker pull jdickey/grid-demo:dev4
