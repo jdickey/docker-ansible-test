@@ -37,11 +37,13 @@
     - name: Verify that the specified Droplet is running
       debug: { msg: "Verify that Droplet {{ target_droplet }} is defined" }
 
-    - name: Verify that the normal user exists on the Droplet
-      debug: { msg: "Verify that the user {{ droplet_user_name }} exists on the Droplet" }
+    - name: Verify that the normal user exists on the Droplet w/o extra groups
+      become: true
+      user:
+        createhome: yes
+        name: '{{ droplet_user_name }}'
 
     - name: Verify that the user's .authorized_keys file exists and is correct
-      # debug: { msg: "Verify the user's .authorized_keys file" }
       authorized_key:
         exclusive: no
         key: https://github.com/jdickey.keys
@@ -137,6 +139,13 @@
           REACT_APP_IMAGE_TAG: "grid-demo:dev4"
         image: "jdickey/grid-demo:dev4"
         name: "automated_insanity"
+
+    - name: Verify that the normal user has been added to docker and sudo groups
+      become: true
+      user:
+        append: yes
+        groups: docker,sudo
+        name: '{{ droplet_user_name }}'
 
     - name: get Droplet IP address
       shell: /snap/bin/doctl compute droplet list demo2 -t {{ do_token }} --no-header --format 'PublicIPv4'
