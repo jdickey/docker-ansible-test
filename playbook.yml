@@ -41,10 +41,21 @@
       debug: { msg: "Verify that the user {{ droplet_user_name }} exists on the Droplet" }
 
     - name: Verify that the user's .authorized_keys file exists and is correct
-      debug: { msg: "Verify the user's .authorized_keys file" }
+      # debug: { msg: "Verify the user's .authorized_keys file" }
+      authorized_key:
+        exclusive: no
+        key: https://github.com/jdickey.keys
+        state: present
+        user: '{{ droplet_user_name }}'
 
     - name: Upload new contents for the /etc/ssh/sshd_config file
-      debug: { msg: "Upload new sshd config contents" }
+      become: yes
+      copy:
+        src: sshd_config.jj2
+        dest: /etc/ssh/sshd_config
+        mode: 0644
+        owner: root
+        group: root
 
     - name: Reload the sshd daemon
       become: true
