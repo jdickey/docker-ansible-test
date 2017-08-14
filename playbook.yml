@@ -47,7 +47,10 @@
       debug: { msg: "Upload new sshd config contents" }
 
     - name: Reload the sshd daemon
-      debug: { msg: "Reload the sshd daemon" }
+      become: true
+      service:
+        name: sshd
+        state: restarted
 
     - name: Update and upgrade installed software
       become: yes
