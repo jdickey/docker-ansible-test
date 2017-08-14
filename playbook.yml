@@ -25,6 +25,7 @@
   vars_files:
     - secret
   vars:
+    # for demo2
     floating_ip: '139.59.220.189'
     target_droplet: 56364157
   roles:
@@ -35,7 +36,19 @@
       debug: { msg: 'SSH key would be verified' }
 
     - name: Verify that the specified Droplet is running
-      debug: { msg: "Verify that Droplet {{ target_droplet }} is defined" }
+      debug: { msg: "digital_ocean module fails on broken 'dopy >= 0.3.2' req" }
+      # digital_ocean:
+      #   command: droplet
+      #   name: '{{ ansible_hostname }}'
+      #   unique_name: yes
+      #   id: '{{ target_droplet }}'
+      #   image_id: 'docker-16-04'
+      #   region_id: 'sgp1'
+      #   size_id: '512mb'
+      #   private_networking: yes
+      #   state: active
+      #   ssh_key_ids: [9727406]
+      #   api_token: '{{ do_token }}'
 
     - name: Verify that the normal user exists on the Droplet w/o extra groups
       become: true
