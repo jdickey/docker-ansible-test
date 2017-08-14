@@ -27,11 +27,28 @@
   vars:
     floating_ip: '139.59.220.189'
     target_droplet: 56364157
-    target_host: demo2
   roles:
     - common
 
   tasks:
+    - name: Verify the presence of an SSH key at DO
+      debug: { msg: 'SSH key would be verified' }
+
+    - name: Verify that the specified Droplet is running
+      debug: { msg: "Verify that Droplet {{ target_droplet }} is defined" }
+
+    - name: Verify that the normal user exists on the Droplet
+      debug: { msg: "Verify that the user {{ droplet_user_name }} exists on the Droplet" }
+
+    - name: Verify that the user's .authorized_keys file exists and is correct
+      debug: { msg: "Verify the user's .authorized_keys file" }
+
+    - name: Upload new contents for the /etc/ssh/sshd_config file
+      debug: { msg: "Upload new sshd config contents" }
+
+    - name: Reload the sshd daemon
+      debug: { msg: "Reload the sshd daemon" }
+
     - name: Update and upgrade installed software
       become: yes
       apt:
