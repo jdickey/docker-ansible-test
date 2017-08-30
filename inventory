@@ -2,3 +2,4 @@
 [demos]
 demo1 ansible_ssh_host=128.199.239.243
 demo2 ansible_ssh_host=139.59.115.233
+demo3 ansible_ssh_host=128.199.203.120
