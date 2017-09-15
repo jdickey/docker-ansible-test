@@ -2,168 +2,74 @@
 # Reinitialize a Droplet, set up Docker, and get our app running in it
 #
 # Ensure that:
-# 1. An SSH key is present (see `digital_ocean` module docs);
-# 2. A named Droplet exists, waiting for it to be running;
-# 3. The regular user exists;
-# 4. The users `authorized_keys` file exists with correct contents;
-# 5. The `/etc/ssh/sshd_config` file has the correct contents;
-# 6. The SSH daemon is reloaded;
-# 7. The `apt` package cache is updated/upgraded;
-# 8. The `ufw` firewall is configured correctly;
-# 9. Docker is installed and available to the regular user;
-# 10. The desired Docker image has been pulled;
-# 11. The desired Docker image has been started;
-# 12. Content is available from the Web server hosted by the named Droplet;
-# 13. The desired Floating IP already exists;
-# 14. The desired Floating IP is reassigned to the named Droplet;
-# 15. Content is available from the Web server addressed by the Floating IP.
+# 1. A named Droplet exists, and is running (from localhost);
+# 2. The regular user exists (on the remote);
+# 3. The user's `authorized_keys` file exists with correct contents (on the remote);
+# 4. The `/etc/ssh/sshd_config` file has the correct contents (on the remote);
+# 5. The SSH daemon is reloaded *if* the configuration was changed (on the remote);
+# 6. The `apt` package cache is updated/upgraded (on the remote);
+# 7. The `ufw` firewall is configured correctly (on the remote);
+# 8. The desired Docker image has been pulled if not already on the remote;
+# 9. The desired Docker image has been started (on the remote);
+# 10. Content is available from the Web server hosted by the named Droplet;
+#
+# THINGS TO BE FIXED:
+# 11. The desired Floating IP already exists;
+# 12. The desired Floating IP is reassigned to the named Droplet;
+# 13. Content is available from the Web server addressed by the Floating IP.
 
 - name: Get a Docker image up and running on a new Droplet
-  hosts: demo2
+  hosts: in_process
   remote_user: '{{ droplet_user_name }}'
-  # become: yes
   vars_files:
     - secret
-  vars:
-    # for demo2
-    floating_ip: '139.59.220.189'
-    target_droplet: 56364157
-  roles:
-    - common
+  # vars: # Look, ma; no vars! Almost certainly a FIXME (roles?)
 
   tasks:
-    - name: Verify the presence of an SSH key at DO
-      debug: { msg: 'SSH key would be verified' }
+    # We're presently using a DigitalOcean app image for Docker. Should this
+    # no longer be the case, this is where you would ensure that Docker is in
+    # fact installed.
 
-    - name: Verify that the specified Droplet is running
-      debug: { msg: "digital_ocean module fails on broken 'dopy >= 0.3.2' req" }
-      # digital_ocean:
-      #   command: droplet
-      #   name: '{{ ansible_hostname }}'
-      #   unique_name: yes
-      #   id: '{{ target_droplet }}'
-      #   image_id: 'docker-16-04'
-      #   region_id: 'sgp1'
-      #   size_id: '512mb'
-      #   private_networking: yes
-      #   state: active
-      #   ssh_key_ids: [9727406]
-      #   api_token: '{{ do_token }}'
-
-    - name: Verify that the normal user exists on the Droplet w/o extra groups
-      become: true
-      user:
-        createhome: yes
-        name: '{{ droplet_user_name }}'
-
-    - name: Verify that the user's .authorized_keys file exists and is correct
-      authorized_key:
-        exclusive: no
-        key: https://github.com/jdickey.keys
-        state: present
-        user: '{{ droplet_user_name }}'
-
-    - name: Upload new contents for the /etc/ssh/sshd_config file
-      become: yes
-      copy:
-        src: sshd_config.jj2
-        dest: /etc/ssh/sshd_config
-        mode: 0644
-        owner: root
-        group: root
-
-    - name: Reload the sshd daemon
-      become: true
-      service:
-        name: sshd
-        state: restarted
-
-    - name: Update and upgrade installed software
-      become: yes
-      apt:
-        autoclean: yes
-        autoremove: yes
-        install_recommends: yes
-        update_cache: yes
-        upgrade: full
-
-    - name: Configure limited access for tcp/22 via UFW
-      become: yes
-      ufw:
-        log: yes
-        proto: tcp
-        rule: limit
-        port: 22
-    # - name: Configure limited access for ipv6/22 via UFW
-    #   become: yes
-    #   ufw:
-    #     log: yes
-    #     proto: ipv6
-    #     rule: limit
-    #     port: 22
-    - name: Allow access for tcp/2375-2376 via UFW
-      become: yes
-      ufw:
-        log: yes
-        proto: tcp
-        rule: allow
-        port: '2375:2376'
-    # - name: Allow access for ipv6/2375-2376 via UFW
-    #   become: yes
-    #   ufw:
-    #     log: yes
-    #     proto: ipv6
-    #     rule: allow
-    #     port: '2375:2376'
-    - name: Enable the UFW firewall and turn on logging
-      become: yes
-      ufw:
-        state: enabled
-        logging: on
-
-    # Yes, we're presently using a DigitalOcean app image for Docker. That might
-    # not always be the case; this is harmless even when it is.
-    - name: Ensure Docker is installed
-      apt:
-        name: docker-ce
-        install_recommends: yes
-        autoclean: yes
-        autoremove: yes
+    - name: Ensure pip is upgraded
+      pip:
+        name: pip
+        state: latest
+    - name: Install docker-py via pip
+      pip:
+        name: docker-py
         state: present
 
+    # FIXME: Don't hardcode image name! Use an extra var instead
     - name: pull Docker image
-      shell: docker pull jdickey/grid-demo:dev4
-      # docker_image:
-      #   name: jdickey/grid-demo:dev4
+      docker_image:
+        state: present
+        name: jdickey/grid-demo:dev4
 
+    # FIXME: Don't hardcode environment variables; those should be extras too
     - name: ensure Docker container is running
       docker_container:
         state: started
-        interactive: yes
-        tty: yes
-        auto_remove: yes
-        exposed_ports: "80"
-        published_ports: "80:80"
-        memory: 64m
+        # interactive: yes
+        # tty: yes
+        # auto_remove: yes
         detach: yes
+        exposed_ports: "80"
+        memory: 64m
+        published_ports: "80:80"
         env:
           REACT_APP_GIT_HASH_FULL: 652828fa5d0b9d09c91a4f2f19d12f259887b17f
           REACT_APP_GIT_HASH_SHORT: 652828f
           REACT_APP_IMAGE_TAG: "grid-demo:dev4"
+          DOCKER_HUB_USER: jdickey
         image: "jdickey/grid-demo:dev4"
         name: "automated_insanity"
 
-    - name: Verify that the normal user has been added to docker and sudo groups
-      become: true
-      user:
-        append: yes
-        groups: docker,sudo
-        name: '{{ droplet_user_name }}'
-
     - name: get Droplet IP address
-      shell: /snap/bin/doctl compute droplet list demo2 -t {{ do_token }} --no-header --format 'PublicIPv4'
+      shell: ifconfig eth0 | grep 'inet addr' | awk '{printf("%s\n", $2); }' | cut -f 2 -d ':'
       changed_when: false
       register: droplet_ip
+    - name: debugging
+      debug: var=droplet_ip
 
     - name: ensure content is available from the Droplet IP directly
       uri:
@@ -171,20 +77,22 @@
         return_content: yes
       register: droplet_page
 
-    - name: ensure Floating IP is assigned to target droplet
-      digital_ocean_floating_ip:
-        ip: '{{ floating_ip }}'
-        droplet_id: '{{ target_droplet }}'
-        oauth_token: '{{ do_token }}'
+    - debug: msg="droplet_page.etag is {{ droplet_page.etag }}"
 
-    - name: ensure content is available from the Floating IP host
-      uri:
-        url: "http://{{ floating_ip }}/"
-        return_content: yes
-      register: floating_page
-    - debug: var=floating_page.etag
+    # - name: ensure Floating IP is assigned to target droplet
+    #   digital_ocean_floating_ip:
+    #     ip: '{{ floating_ip }}'
+    #     droplet_id: '{{ do_id }}'
+    #     oauth_token: '{{ do_token }}'
 
-    - name: verify Floating IP produces same content as Droplet IP
-      assert:
-        that:
-          - "floating_page.etag == droplet_page.etag"
+    # - name: ensure content is available from the Floating IP host
+    #   uri:
+    #     url: "http://{{ floating_ip }}/"
+    #     return_content: yes
+    #   register: floating_page
+    # - debug: var=floating_page.etag
+
+    # - name: verify Floating IP produces same content as Droplet IP
+    #   assert:
+    #     that:
+    #       - "floating_page.etag == droplet_page.etag"

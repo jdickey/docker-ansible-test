@@ -1,0 +1,14 @@
+---
+- name: Initialise a new DigitalOcean Droplet as a Docker app host
+  connection: local
+  hosts: localhost
+  vars_files:
+    - secret
+  vars:
+    droplet_name: 'new-demo'
+    image_id: 'docker-16-04'
+    region_id: 'sgp1'
+    size_id: '512mb'
+    do_api_key: '{{ do_token }}'
+  roles:
+    - { role: BondAnthony.deploy-digital-ocean, droplet_name: "demo1", droplet_size: '512mb', do_region: 'sgp1', droplet_image_id: 'fedora-26-x64', do_tag_name: 'in-progress' }

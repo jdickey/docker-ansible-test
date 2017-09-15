@@ -1,2 +1,3 @@
 .vault-password
 *.retry
+ansible-digital_ocean.cache

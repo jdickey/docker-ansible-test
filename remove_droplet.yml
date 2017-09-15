@@ -1,0 +1,36 @@
+# Run this Playbook with the command line
+#     ansible-playbook remove_droplet.yml -e droplet_id=$DROPLET_ID --vault-password=./.vault-password
+#
+# with a suitable value replacing `$DROPLET_ID`, of course. Note that running
+# this Playbook with an invalid or illegal value for `$DROPLET_ID` will fail the
+# first task.
+#
+# Notes:
+# 1. As of Ansible 2.3.2.0 (on OS X, at least), the `digital_ocean` module *will
+#    not* delete a Droplet.
+# 2. There appears to be no stock Ansible module that will power down a Droplet.
+---
+- name: Shut down and remove a DigitalOcean Droplet
+  # connection: local
+  hosts: localhost
+  # vars_files: # uncomment this when 'digital_ocean' module fixed/replaced
+  #   - secret
+  vars:
+    # *MUST* define `droplet_id`
+    ssh_key_ids: ['{{ do_ssh_key_id }}']
+  tasks:
+    - name: Verify that Droplet ID variable has been set
+      fail: msg="Please define a 'droplet_id' variable with the numeric Droplet ID"
+      when: "droplet_id is not defined"
+
+    - name: Forcibly power off Droplet if not already shut down
+      shell: doctl compute droplet-action power-off '{{ droplet_id }}'
+
+    - name: Remove Droplet
+      shell: doctl compute droplet delete --force '{{ droplet_id }}'
+      # digital_ocean:
+      #   command: droplet
+      #   name: '{{ droplet_name }}'
+      #   state: deleted
+      #   ssh_key_ids: '{{ ssh_key_ids }}'
+      # register: do_response
