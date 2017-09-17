@@ -1,23 +1,24 @@
 ---
 - name: Finalise user and firewall setup on a new Droplet
   hosts: in_process
-  # ansible_ssh_common_args='StrictHostKeyChecking=no'
-  # connection: local
   remote_user: root
   vars_files:
     - secret
   vars:
+    - authorized_key_url: https://github.com/jdickey.keys
+    - sshd_config_src: sshd_config.ubuntu.jj2
+    - user_shell: /bin/bash
   tasks:
     - name: Verify that the normal user exists on the Droplet
       user:
         name: '{{ droplet_user_name }}'
         password: '{{ ansible_hashed_pass }}'
-        shell: /bin/bash
+        shell: '{{ user_shell }}'
 
     - name: Verify that the user's .authorized_keys file exists and is correct
       authorized_key:
         exclusive: no
-        key: https://github.com/jdickey.keys
+        key: '{{ authorized_key_url }}'
         state: present
         user: '{{ droplet_user_name }}'
 
@@ -29,22 +30,17 @@
 
     - name: Upload new contents for the /etc/ssh/sshd_config file
       copy:
-        src: sshd_config.ubuntu.jj2
+        src: '{{ sshd_config_src }}'
         dest: /etc/ssh/sshd_config
         mode: 0644
         owner: root
         group: root
       register: upload_output
 
-    # - name: Install doctl via snap
-    #   shell: 'snap install doctl'
-
-    # For Debian/Ubuntu
     - name: Install aptitude so that apt module works on Ansible 2.3
       shell: 'apt-get -y install aptitude'
 
     - name: Update and upgrade installed software
-      # delegate_to: '{{ ansible_hostname }}'
       apt:
         autoclean: yes
         autoremove: yes

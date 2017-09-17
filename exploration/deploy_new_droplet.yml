@@ -1,3 +1,8 @@
+# This Playbook is **EXPERIMENTAL** and **NOT FOR USE AT PRESENT.**
+#
+# It was used to explore Anthony Bond's `deploy-digital-ocean` Role (see pages
+# on [Ansible Galaxy](https://galaxy.ansible.com/BondAnthony/deploy-digital-ocean/)
+# and [GitHub](https://github.com/BondAnthony/deploy-digital-ocean)).
 ---
 - name: Initialise a new DigitalOcean Droplet as a Docker app host
   connection: local

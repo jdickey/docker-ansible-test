@@ -1,39 +1,33 @@
 ---
-# Reinitialize a Droplet, set up Docker, and get our app running in it
+# Set up Docker and get our app running on a newly-initialised Droplet.
+# (See `new_droplet.yml` for the create-new-droplet Playbook.)
 #
 # Ensure that:
-# 1. A named Droplet exists, and is running (from localhost);
-# 2. The regular user exists (on the remote);
-# 3. The user's `authorized_keys` file exists with correct contents (on the remote);
-# 4. The `/etc/ssh/sshd_config` file has the correct contents (on the remote);
-# 5. The SSH daemon is reloaded *if* the configuration was changed (on the remote);
-# 6. The `apt` package cache is updated/upgraded (on the remote);
-# 7. The `ufw` firewall is configured correctly (on the remote);
-# 8. The desired Docker image has been pulled if not already on the remote;
-# 9. The desired Docker image has been started (on the remote);
-# 10. Content is available from the Web server hosted by the named Droplet;
+# 1. The latest version of Python's `pip` utility is installed;
+# 2. Install the `docker-py` (**NOT** `dopy`!) Python module. This will be used
+#    by the `docker` Ansible module;
+# 3. The desired Docker image has been pulled if not already on the remote;
+# 4. The desired Docker image has been started (on the remote);
+# 5. Content is available from the Web server hosted by the named Droplet;
 #
-# THINGS TO BE FIXED:
-# 11. The desired Floating IP already exists;
-# 12. The desired Floating IP is reassigned to the named Droplet;
-# 13. Content is available from the Web server addressed by the Floating IP.
+# KNOWN TBDs:
+# 1. The desired Floating IP already exists;
+# 2. The desired Floating IP is reassigned to the named Droplet;
+# 3. Content is available from the Web server addressed by the Floating IP.
 
-- name: Get a Docker image up and running on a new Droplet
+- name: Get a Docker image up and running on a newly-initialised Droplet
   hosts: in_process
   remote_user: '{{ droplet_user_name }}'
   vars_files:
     - secret
-  # vars: # Look, ma; no vars! Almost certainly a FIXME (roles?)
+    - docker_app
 
   tasks:
-    # We're presently using a DigitalOcean app image for Docker. Should this
-    # no longer be the case, this is where you would ensure that Docker is in
-    # fact installed.
-
     - name: Ensure pip is upgraded
       pip:
         name: pip
         state: latest
+
     - name: Install docker-py via pip
       pip:
         name: docker-py
@@ -43,7 +37,7 @@
     - name: pull Docker image
       docker_image:
         state: present
-        name: jdickey/grid-demo:dev4
+        name: "{{ docker_hub_user }}/{{ app_image_tag }}"
 
     # FIXME: Don't hardcode environment variables; those should be extras too
     - name: ensure Docker container is running
@@ -54,15 +48,15 @@
         # auto_remove: yes
         detach: yes
         exposed_ports: "80"
-        memory: 64m
+        memory: '{{ docker_container_memory }}'
         published_ports: "80:80"
         env:
-          REACT_APP_GIT_HASH_FULL: 652828fa5d0b9d09c91a4f2f19d12f259887b17f
-          REACT_APP_GIT_HASH_SHORT: 652828f
-          REACT_APP_IMAGE_TAG: "grid-demo:dev4"
-          DOCKER_HUB_USER: jdickey
-        image: "jdickey/grid-demo:dev4"
-        name: "automated_insanity"
+          REACT_APP_GIT_HASH_FULL: '{{ git_hash_full }}'
+          REACT_APP_GIT_HASH_SHORT: '{{ git_hash_short }}'
+          REACT_APP_IMAGE_TAG: '{{ app_image_tag }}'
+          DOCKER_HUB_USER: '{{ docker_hub_user }}'
+        image: "{{ docker_hub_user }}/{{ app_image_tag }}"
+        name: '{{ docker_container_name }}'
 
     - name: get Droplet IP address
       shell: ifconfig eth0 | grep 'inet addr' | awk '{printf("%s\n", $2); }' | cut -f 2 -d ':'

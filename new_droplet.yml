@@ -10,23 +10,18 @@
   hosts: localhost
   vars_files:
     - secret
-  vars:
-    droplet_name: 'new-demo'
-    image_id: 'docker-16-04'
-    region_id: 'sgp1'
-    size_id: '512mb'
-    ssh_key_ids: ['{{ do_ssh_key_id }}']
+    - do_droplet_vars
   tasks:
     - name: Deploy new Droplet
       digital_ocean:
         command: droplet
-        name: '{{ droplet_name }}'
+        state: active
         unique_name: yes
+        name: '{{ droplet_name }}'
         image_id: '{{ image_id }}'
         region_id: '{{ region_id }}'
         size_id: '{{ size_id }}'
-        private_networking: yes
-        state: active
+        private_networking: '{{ private_networking }}'
         ssh_key_ids: '{{ ssh_key_ids }}'
       register: do_response
 
