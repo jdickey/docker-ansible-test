@@ -16,11 +16,12 @@
 # 3. Content is available from the Web server addressed by the Floating IP.
 
 - name: Get a Docker image up and running on a newly-initialised Droplet
-  hosts: in_process
+  hosts: provisioned
   remote_user: '{{ droplet_user_name }}'
   vars_files:
     - secret
     - docker_app
+    - running_droplet_details
 
   tasks:
     - name: Ensure pip is upgraded
@@ -90,3 +91,23 @@
     #   assert:
     #     that:
     #       - "floating_page.etag == droplet_page.etag"
+
+    - name: Create final droplet tag if not already created
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        name: '{{ final_tag_name }}'
+        state: present
+
+    - name: Add final droplet tag
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: '{{ final_tag_name }}'
+        state: present
+
+    - name: Untag droplet as provisioned
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: provisioned
+        state: absent

@@ -72,3 +72,23 @@
       service:
         name: sshd
         state: restarted
+
+    - name: Create provisioned tag if not already created
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        name: provisioned
+        state: present
+
+    - name: Tag droplet as provisioned
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: provisioned
+        state: present
+
+    - name: Untag droplet as in_process
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: in_process
+        state: absent
