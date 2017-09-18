@@ -6,31 +6,26 @@
 # first task.
 #
 # Notes:
-# 1. As of Ansible 2.3.2.0 (on OS X, at least), the `digital_ocean` module *will
-#    not* delete a Droplet.
+# 1. To delete a Droplet using the `digital_ocean` module, Ansible must be at
+#    least at Version 2.4.0.0.
 # 2. There appears to be no stock Ansible module that will power down a Droplet.
+#    However, at least under Ansible 2.4.0.0, a running Droplet may be deleted.
+#    With great power comes great danger. You Have Been Warned.
 ---
 - name: Shut down and remove a DigitalOcean Droplet
-  # connection: local
   hosts: localhost
-  # vars_files: # uncomment this when 'digital_ocean' module fixed/replaced
-  #   - secret
+  vars_files:
+    - secret
   vars:
-    # *MUST* define `droplet_id`
     ssh_key_ids: ['{{ do_ssh_key_id }}']
   tasks:
     - name: Verify that Droplet ID variable has been set
       fail: msg="Please define a 'droplet_id' variable with the numeric Droplet ID"
       when: "droplet_id is not defined"
 
-    - name: Forcibly power off Droplet if not already shut down
-      shell: doctl compute droplet-action power-off '{{ droplet_id }}'
-
     - name: Remove Droplet
-      shell: doctl compute droplet delete --force '{{ droplet_id }}'
-      # digital_ocean:
-      #   command: droplet
-      #   name: '{{ droplet_name }}'
-      #   state: deleted
-      #   ssh_key_ids: '{{ ssh_key_ids }}'
-      # register: do_response
+      digital_ocean:
+        command: droplet
+        id: '{{ droplet_id }}'
+        state: deleted
+        ssh_key_ids: '{{ ssh_key_ids }}'
