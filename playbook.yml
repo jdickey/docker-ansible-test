@@ -59,50 +59,17 @@
         image: "{{ docker_hub_user }}/{{ app_image_tag }}"
         name: '{{ docker_container_name }}'
 
-    - name: get Droplet IP address
-      shell: ifconfig eth0 | grep 'inet addr' | awk '{printf("%s\n", $2); }' | cut -f 2 -d ':'
-      changed_when: false
-      register: droplet_ip
-    - name: debugging
-      debug: var=droplet_ip
-
-    - name: ensure content is available from the Droplet IP directly
-      uri:
-        url: "http://{{ droplet_ip.stdout }}/"
-        return_content: yes
-      register: droplet_page
-
-    - debug: msg="droplet_page.etag is {{ droplet_page.etag }}"
-
-    # - name: ensure Floating IP is assigned to target droplet
-    #   digital_ocean_floating_ip:
-    #     ip: '{{ floating_ip }}'
-    #     droplet_id: '{{ do_id }}'
-    #     oauth_token: '{{ do_token }}'
-
-    # - name: ensure content is available from the Floating IP host
-    #   uri:
-    #     url: "http://{{ floating_ip }}/"
-    #     return_content: yes
-    #   register: floating_page
-    # - debug: var=floating_page.etag
-
-    # - name: verify Floating IP produces same content as Droplet IP
-    #   assert:
-    #     that:
-    #       - "floating_page.etag == droplet_page.etag"
-
-    - name: Create final droplet tag if not already created
+    - name: Create 'docker_up' tag if not already created
       delegate_to: 127.0.0.1
       digital_ocean_tag:
-        name: '{{ final_tag_name }}'
+        name: 'docker_up'
         state: present
 
-    - name: Add final droplet tag
+    - name: Add 'docker_up' droplet tag
       delegate_to: 127.0.0.1
       digital_ocean_tag:
         resource_id: '{{ do_id }}'
-        name: '{{ final_tag_name }}'
+        name: 'docker_up'
         state: present
 
     - name: Untag droplet as provisioned

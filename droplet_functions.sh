@@ -91,6 +91,10 @@
 #    d. **NOTE** that the tag name applied in (d) above **will change** after
 #       adding implementations for our `rename_and_retag_droplet` and
 #       `update_floating_ip` functions, as below.
+# 4. `update_floating_ip` unassigns a Floating IP address (whose value is read
+#    from the `running_droplet_details` variable file), then assign it to the
+#    Droplet created by the earlier functions. It also re-tags the Droplet using
+#    a distinct tag which will then be used by `rename_and_retag_droplet`.
 #
 # # STUBBED (TBD) FUNCTIONS
 #
@@ -101,20 +105,20 @@
 #    by the earlier functions, which by default presently is set to `new_demo`.
 #    This will allow for a more meaningful report when listing running/available
 #    Droplets.
-# 2. `update_floating_ip` will unassign a Floating IP address (whose value will
-#    be added to the `running_droplet_details` variable file), then assign it to
-#    the Droplet created by the earlier functions. It will also re-tag the Droplet
-#    using a distinct tag which will then be used by `rename_and_retag_droplet`.
 #
 # # ENVIRONMENT VARIABLES
 #
-# 1. Several of these functions use the Ansible-defined `ANSIBLE_HOST_KEY_CHECKING`
+# 1. The `update_floating_ip` function is the only one of these that requires
+#    the user on the *target machine* to be defined. It **requires** that there
+#    be a value assigned to the `DROPLET_USER` environment variable; if none is
+#    set, then that function will return an error value.
+# 2. Several of these functions use the Ansible-defined `ANSIBLE_HOST_KEY_CHECKING`
 #    environment variable, which may or may not already be set when the
 #    functions are called. Any existing value assigned will be preserved across
 #    function calls; i.e., these functions require explicitly setting the value,
 #    but any existing value will be restored after the functions' use of it is
 #    completed.
-# 2. If the `OTHER_OB_ARGS` variable is set, it will be passed as additional
+# 3. If the `OTHER_OB_ARGS` variable is set, it will be passed as additional
 #    command-line parameter(s) to `ansible-playbook`. One possible use for this
 #    is to set verbosity levels; e.g., `-v` simply shows the result of each task
 #    in the Playbooks being run; `-vvvv` displays full debugging information.
@@ -158,7 +162,11 @@ function setup_docker_on_droplet() {
 }
 
 function update_floating_ip() {
-  echo "NOTE: Updating Floating IP for Droplet is not yet implemented."
+  if [[ ! $DROPLET_USER ]]; then
+    echo "The DROPLET_USER environment variable MUST be set to the user name for the target host"
+    return 1
+  fi
+  ansible-playbook update_floating_ip.yml -u $DROPLET_USER -i ./digital_ocean.py --vault-password=./.vault-password $OTHER_PB_ARGS
 }
 
 function create_and_provision_droplet() {
