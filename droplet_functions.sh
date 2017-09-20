@@ -5,7 +5,7 @@
 #
 # Created and maintained by [Jeff Dickey](https://github.com/jdickey).
 #
-# We have two "higher-order" functions, which are what you'll probably want to
+# We have three "higher-order" functions, which are what you'll probably want to
 # use most of the time, and several task-specific functions to run individual
 # Playbooks.
 #
@@ -20,8 +20,7 @@
 #    a. `new_droplet`
 #    b. `provision_droplet`
 #    c. `setup_docker_on_droplet`
-#    d. `rename_and_retag_droplet`
-#    e. `update_floating_ip`
+#    d. `update_floating_ip`
 #
 # 2. `remove_droplet`
 #    Taking an optional "Droplet name" parameter that defaults to `new-demo` (to
@@ -33,6 +32,12 @@
 #    as the "extra variable" `droplet_id` to the `remove_droplet.yml` Playbook.
 #    **NOTE** that this function requires that the [`doctl`](https://github.com/digitalocean/doctl)
 #    utility be installed on the host executing this function.
+#
+# 3. `rename_and_retag_droplet` will rename the Droplet created and provisioned
+#    by the earlier functions, which by default presently is set to `new_demo`.
+#    This will allow for a more meaningful report when listing running/available
+#    Droplets. This function **must** be executed explicitly, separately, after
+#    `create_and_provision_droplet` has successfully completed.
 #
 # # SECONDARY FUNCTIONS
 #
@@ -96,29 +101,15 @@
 #    Droplet created by the earlier functions. It also re-tags the Droplet using
 #    a distinct tag which will then be used by `rename_and_retag_droplet`.
 #
-# # STUBBED (TBD) FUNCTIONS
-#
-# These functions will implement functionality needed for "real deployments" on
-# Digital Ocean, but they have not yet been defined beyond placeholder messages.
-#
-# 1. `rename_and_retag_droplet` will rename the Droplet created and provisioned
-#    by the earlier functions, which by default presently is set to `new_demo`.
-#    This will allow for a more meaningful report when listing running/available
-#    Droplets.
-#
 # # ENVIRONMENT VARIABLES
 #
-# 1. The `update_floating_ip` function is the only one of these that requires
-#    the user on the *target machine* to be defined. It **requires** that there
-#    be a value assigned to the `DROPLET_USER` environment variable; if none is
-#    set, then that function will return an error value.
-# 2. Several of these functions use the Ansible-defined `ANSIBLE_HOST_KEY_CHECKING`
+# 1. Several of these functions use the Ansible-defined `ANSIBLE_HOST_KEY_CHECKING`
 #    environment variable, which may or may not already be set when the
 #    functions are called. Any existing value assigned will be preserved across
 #    function calls; i.e., these functions require explicitly setting the value,
 #    but any existing value will be restored after the functions' use of it is
 #    completed.
-# 3. If the `OTHER_OB_ARGS` variable is set, it will be passed as additional
+# 2. If the `OTHER_OB_ARGS` variable is set, it will be passed as additional
 #    command-line parameter(s) to `ansible-playbook`. One possible use for this
 #    is to set verbosity levels; e.g., `-v` simply shows the result of each task
 #    in the Playbooks being run; `-vvvv` displays full debugging information.
@@ -162,11 +153,7 @@ function setup_docker_on_droplet() {
 }
 
 function update_floating_ip() {
-  if [[ ! $DROPLET_USER ]]; then
-    echo "The DROPLET_USER environment variable MUST be set to the user name for the target host"
-    return 1
-  fi
-  ansible-playbook update_floating_ip.yml -u $DROPLET_USER -i ./digital_ocean.py --vault-password=./.vault-password $OTHER_PB_ARGS
+  ansible-playbook update_floating_ip.yml -i ./digital_ocean.py --vault-password=./.vault-password $OTHER_PB_ARGS
 }
 
 function create_and_provision_droplet() {
@@ -176,7 +163,6 @@ function create_and_provision_droplet() {
   provision_droplet
   setup_docker_on_droplet
   update_floating_ip
-  rename_and_retag_droplet
 }
 
 function remove_droplet() {

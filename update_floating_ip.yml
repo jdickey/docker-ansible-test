@@ -21,6 +21,7 @@
   vars_files:
     - secret
     - running_droplet_details
+  remote_user: '{{ droplet_user_name }}'
   tasks:
     - name: ensure Floating IP is assigned to target droplet
       delegate_to: 127.0.0.1
