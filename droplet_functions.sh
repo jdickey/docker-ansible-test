@@ -138,7 +138,7 @@ function provision_droplet() {
 }
 
 function rename_and_retag_droplet() {
-  echo "NOTE: Renaming/retagging Droplet is not yet implemented."
+  ansible-playbook rename_and_retag_droplet.yml -i ./digital_ocean.py --vault-password=./.vault-password $OTHER_PB_ARGS
 }
 
 function setup_docker_on_droplet() {
