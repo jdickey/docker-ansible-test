@@ -1,30 +1,80 @@
 ---
-- hosts: localhost
-  roles:
-    - common
+# Set up Docker and get our app running on a newly-initialised Droplet.
+# (See `new_droplet.yml` for the create-new-droplet Playbook.)
+#
+# Ensure that:
+# 1. The latest version of Python's `pip` utility is installed;
+# 2. Install the `docker-py` (**NOT** `dopy`!) Python module. This will be used
+#    by the `docker` Ansible module;
+# 3. The desired Docker image has been pulled if not already on the remote;
+# 4. The desired Docker image has been started (on the remote);
+# 5. Content is available from the Web server hosted by the named Droplet;
+#
+# KNOWN TBDs:
+# 1. The desired Floating IP already exists;
+# 2. The desired Floating IP is reassigned to the named Droplet;
+# 3. Content is available from the Web server addressed by the Floating IP.
+
+- name: Get a Docker image up and running on a newly-initialised Droplet
+  hosts: provisioned
+  remote_user: '{{ droplet_user_name }}'
+  vars_files:
+    - secret
+    - docker_app
+    - running_droplet_details
 
   tasks:
-  - name: install authorized_keys file
-    authorized_key:
-      exclusive: yes
-      key: https://github.com/jdickey.keys
-      manage_dir: yes
-      user: '{{ remote_user }}'
+    - name: Ensure pip is upgraded
+      pip:
+        name: pip
+        state: latest
 
-  # FIXME: `digital_ocean' module gives an error:
-  #        "parameters are mutually exclusive: ['size_id', 'ssh_pub_key']"
-  # WTF? Without an `ssh_pub_key`, the new Droplet won't have `ssh` set up
-  # correctly and, therefore, no way to log in except with a hand-entered
-  # password. FTR, the value of `ssh_pub_key` was `'{{ public_key }}'`.
-  - name: ensure droplet one exists
-    digital_ocean: >
-      state=present
-      command=droplet
-      name=droplet-one
-      size_id=512mb
-      region_id=sgp1
-      image_id=docker-16-04
-      api_token={{ do_token }}
-    register: droplet_one
+    - name: Install docker-py via pip
+      pip:
+        name: docker-py
+        state: present
 
-  - debug: msg="IP is {{ droplet_one.droplet.ip_address }}"
+    # FIXME: Don't hardcode image name! Use an extra var instead
+    - name: pull Docker image
+      docker_image:
+        state: present
+        name: "{{ docker_hub_user }}/{{ app_image_tag }}"
+
+    # FIXME: Don't hardcode environment variables; those should be extras too
+    - name: ensure Docker container is running
+      docker_container:
+        state: started
+        # interactive: yes
+        # tty: yes
+        # auto_remove: yes
+        detach: yes
+        exposed_ports: "80"
+        memory: '{{ docker_container_memory }}'
+        published_ports: "80:80"
+        env:
+          REACT_APP_GIT_HASH_FULL: '{{ git_hash_full }}'
+          REACT_APP_GIT_HASH_SHORT: '{{ git_hash_short }}'
+          REACT_APP_IMAGE_TAG: '{{ app_image_tag }}'
+          DOCKER_HUB_USER: '{{ docker_hub_user }}'
+        image: "{{ docker_hub_user }}/{{ app_image_tag }}"
+        name: '{{ docker_container_name }}'
+
+    - name: Create 'docker_up' tag if not already created
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        name: 'docker_up'
+        state: present
+
+    - name: Add 'docker_up' droplet tag
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: 'docker_up'
+        state: present
+
+    - name: Untag droplet as provisioned
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: provisioned
+        state: absent

@@ -1,0 +1,94 @@
+---
+- name: Finalise user and firewall setup on a new Droplet
+  hosts: in_process
+  remote_user: root
+  vars_files:
+    - secret
+  vars:
+    - authorized_key_url: https://github.com/jdickey.keys
+    - sshd_config_src: sshd_config.ubuntu.jj2
+    - user_shell: /bin/bash
+  tasks:
+    - name: Verify that the normal user exists on the Droplet
+      user:
+        name: '{{ droplet_user_name }}'
+        password: '{{ ansible_hashed_pass }}'
+        shell: '{{ user_shell }}'
+
+    - name: Verify that the user's .authorized_keys file exists and is correct
+      authorized_key:
+        exclusive: no
+        key: '{{ authorized_key_url }}'
+        state: present
+        user: '{{ droplet_user_name }}'
+
+    - name: Verify that the normal user has been added to docker and sudo groups
+      user:
+        append: yes
+        groups: docker,sudo
+        name: '{{ droplet_user_name }}'
+
+    - name: Upload new contents for the /etc/ssh/sshd_config file
+      copy:
+        src: '{{ sshd_config_src }}'
+        dest: /etc/ssh/sshd_config
+        mode: 0644
+        owner: root
+        group: root
+      register: upload_output
+
+    - name: Install aptitude so that apt module works on Ansible 2.3
+      shell: 'apt-get -y install aptitude'
+
+    - name: Update and upgrade installed software
+      apt:
+        autoclean: yes
+        autoremove: yes
+        install_recommends: yes
+        update_cache: yes
+        upgrade: full
+
+    - name: Configure limited access for tcp/22 via UFW
+      ufw:
+        log: yes
+        proto: tcp
+        rule: limit
+        port: 22
+
+    - name: Allow access for tcp/2375-2376 via UFW
+      ufw:
+        log: yes
+        proto: tcp
+        rule: allow
+        port: '2375:2376'
+
+    - name: Enable the UFW firewall and turn on logging
+      ufw:
+        state: enabled
+        logging: on
+
+    - name: Reload the sshd daemon if needed
+      when: upload_output.changed
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Create provisioned tag if not already created
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        name: provisioned
+        state: present
+
+    - name: Tag droplet as provisioned
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: provisioned
+        state: present
+
+    - name: Untag droplet as in_process
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: in_process
+        state: absent

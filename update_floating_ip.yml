@@ -1,0 +1,72 @@
+---
+# Reassign Floating IP for project to newly-created and -provisioned Droplet.
+#
+# Ensure that:
+# 1. the Floating IP (read from the `running_droplet_details` var file) is
+#    present and assigned to the new Droplet;
+# 2. HTTP content is available from Port 80 on the Floating IP;
+# 3. that content is the same as the content served by the Droplet's public IP
+#    address
+#
+# Note that the specified value for `hosts` is `docker_up`, which matches the
+# droplet(s) tagged by the previous Playbook after starting our Docker container
+# on the Droplet(s), yet the tasks are delegated to `127.0.0.1` (ie, localhost).
+# Doing things the other way rount (setting `hosts` to localhost and dynamically
+# determining the Droplet(s) tagged) is clunkier, thanks to the need to recreate
+# information that Ansible supplies us in hostvars "for free".
+#
+
+- name: Reassign Floating IP to recently-created and -provisioned Droplet
+  hosts: docker_up
+  vars_files:
+    - secret
+    - running_droplet_details
+  remote_user: '{{ droplet_user_name }}'
+  tasks:
+    - name: ensure Floating IP is assigned to target droplet
+      delegate_to: 127.0.0.1
+      digital_ocean_floating_ip:
+        ip: '{{ floating_ip }}'
+        droplet_id: '{{ do_id }}'
+        oauth_token: '{{ do_token }}'
+        state: present
+
+    - name: ensure content is available from the Floating IP host
+      delegate_to: 127.0.0.1
+      uri:
+        url: "http://{{ floating_ip }}/"
+        return_content: yes
+      register: floating_page
+
+    - name: ensure content is available from the Droplet IP directly
+      delegate_to: 127.0.0.1
+      uri:
+        url: "http://{{ do_networks.v4[1].ip_address }}/"
+        return_content: yes
+      register: droplet_page
+
+    - name: verify Floating IP produces same content as Droplet IP
+      delegate_to: 127.0.0.1
+      assert:
+        that:
+          - "floating_page.etag == droplet_page.etag"
+
+    - name: Create 'fip_set' tag if not already created
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        name: 'fip_set'
+        state: present
+
+    - name: Add 'fip_set' droplet tag
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: 'fip_set'
+        state: present
+
+    - name: Untag droplet as `docker_up`
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: 'docker_up'
+        state: absent

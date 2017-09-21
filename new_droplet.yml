@@ -1,0 +1,42 @@
+# Run this Playbook with the command line
+#     ansible-playbook new_droplet.yml --vault-password=./.vault-password
+#
+# The vault password file is required to unlock the vars file `secret`. That
+# file contains the `do_ssh_key_id` variable used to identify which SSH key is
+# to be added to the new Droplet.
+---
+- name: Initialise a new DigitalOcean Droplet as a Docker app host
+  connection: local
+  hosts: localhost
+  vars_files:
+    - secret
+    - do_droplet_vars
+  tasks:
+    - name: Deploy new Droplet
+      digital_ocean:
+        command: droplet
+        state: active
+        unique_name: yes
+        name: '{{ droplet_name }}'
+        image_id: '{{ image_id }}'
+        region_id: '{{ region_id }}'
+        size_id: '{{ size_id }}'
+        private_networking: '{{ private_networking }}'
+        ssh_key_ids: '{{ ssh_key_ids }}'
+      register: do_response
+
+    - name: Create in_process tag if not already created
+      digital_ocean_tag:
+        name: in_process
+        state: present
+
+    - name: Tag new droplet as in_process
+      digital_ocean_tag:
+        resource_id: '{{ do_response.droplet.id }}'
+        name: in_process
+        state: present
+
+    - name: Remove IP address from local known_hosts file if it exists
+      known_hosts:
+        name: '{{ do_response.droplet.networks.v4[1].ip_address }}'
+        state: absent

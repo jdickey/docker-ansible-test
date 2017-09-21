@@ -1,0 +1,33 @@
+---
+- name: Rename and re-tag Droplet after assigning Floating IP
+  hosts: fip_set
+  vars_files:
+    - secret # for droplet_user_name
+    - running_droplet_details
+  vars:
+    new_droplet_name: '{{ final_tag_name }}-active'
+  remote_user: '{{ droplet_user_name }}'
+  tasks:
+    - name: Rename Droplet based on final tag name
+      delegate_to: 127.0.0.1
+      shell: "doctl compute droplet-action rename {{ do_id }} --droplet-name {{ new_droplet_name }} --wait"
+
+    - name: Create final droplet tag if not already created
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        name: '{{ final_tag_name }}'
+        state: present
+
+    - name: Add final droplet tag
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: '{{ final_tag_name }}'
+        state: present
+
+    - name: Untag droplet as `fip_set`
+      delegate_to: 127.0.0.1
+      digital_ocean_tag:
+        resource_id: '{{ do_id }}'
+        name: 'fip_set'
+        state: absent

@@ -1,0 +1,7 @@
+
+app_image_tag: 'grid-demo:dev4'
+docker_container_memory: '64m'
+docker_container_name: 'automated-insanity'
+docker_hub_user: jdickey
+git_hash_full: 652828fa5d0b9d09c91a4f2f19d12f259887b17f
+git_hash_short: 652828f
