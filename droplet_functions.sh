@@ -144,7 +144,7 @@ function rename_and_retag_droplet() {
 function setup_docker_on_droplet() {
   local saved_ahkc=${ANSIBLE_HOST_KEY_CHECKING:-''}
   ANSIBLE_HOST_KEY_CHECKING=False
-  ansible-playbook playbook.yml -i ./digital_ocean.py --vault-password=./.vault-password $OTHER_PB_ARGS
+  ansible-playbook setup_docker.yml -i ./digital_ocean.py --vault-password=./.vault-password $OTHER_PB_ARGS
   if [[ $saved_ahkc ]]; then
     export ANSIBLE_HOST_KEY_CHECKING=$saved_ahkc
   else
