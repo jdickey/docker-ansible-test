@@ -27,5 +27,5 @@
       digital_ocean:
         command: droplet
         id: '{{ droplet_id }}'
-        state: deleted
+        state: absent
         ssh_key_ids: '{{ ssh_key_ids }}'
