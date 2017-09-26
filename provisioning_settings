@@ -1,0 +1,4 @@
+
+authorized_key_url: https://github.com/jdickey.keys
+sshd_config_src: sshd_config.ubuntu.jj2
+user_shell: /bin/bash

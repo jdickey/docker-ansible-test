@@ -15,7 +15,7 @@
 - name: Shut down and remove a DigitalOcean Droplet
   hosts: localhost
   vars_files:
-    - secret
+    - secret.vault.yml
   vars:
     ssh_key_ids: ['{{ do_ssh_key_id }}']
   tasks:

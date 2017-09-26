@@ -1,3 +1,5 @@
 
+droplet_user_name: jeff
 final_tag_name: demo
 floating_ip: 139.59.220.189
+new_droplet_name: '{{ final_tag_name }}-active'

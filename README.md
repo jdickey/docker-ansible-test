@@ -10,7 +10,7 @@
     + [`do_droplet_vars`](#do_droplet_vars)
     + [`docker_app`](#docker_app)
     + [`running_droplet_details`](#running_droplet_details)
-  * [`secret`](#secret)
+    + [`secret.vault.yml`](#secretvaultyml)
 - [Playbooks](#playbooks)
   * [`new_droplet.yml`](#new_dropletyml)
   * [`provision_droplet.yml`](#provision_dropletyml)
@@ -34,11 +34,13 @@ First, this is a complete rewrite of the original `README` for this project. You
 
 This was originally attempted as a single Playbook, before learning through experience why that's not really a good way to do things &mdash; at least, not when you're trying to incrementally make progress towards a (mostly) "fire-and-forget" deployment process. (What we now recommend is documented in the [Usage](#usage) section, below.)
 
-There are presently six Ansible [Playbooks](#playbooks), each of which has a wrapper function defined in the [`droplet_functions.sh` script](#shell-functions), with additional functions defined for higher-level sequencing. The Playbooks (and their wrapper functions) automate the broad steps in deploying a DigitalOcean Droplet (VPS instance) running a single Docker container based on an image accessible via `docker pull`. (Presently, this would be a public image hosted on [Docker Hub](https://hub.docker.com/), although the process to add a private image source is localised and readily understood.) There is support for reassigning an existing FLoating IP to the new Droplet, as well as for removing an existing droplet, e.g., one replaced by a new deployment.
+There are presently six Ansible [Playbooks](#playbooks), each of which has a wrapper function defined in the [`droplet_functions.sh` script](#shell-functions), with additional functions defined for higher-level sequencing. The Playbooks (and their wrapper functions) automate the broad steps in deploying a DigitalOcean Droplet (VPS instance) running a single Docker container based on an image accessible via `docker pull`. (Presently, this would be a public image hosted on [Docker Hub](https://hub.docker.com/), although the process to add a private image source is localised and readily understood.) There is support for reassigning an existing Floating IP to the new Droplet, as well as for removing an existing droplet, e.g., one replaced by a new deployment.
 
 These Playbooks use [Ansible variables](http://docs.ansible.com/ansible/latest/playbooks_variables.html) and [dynamic inventories](http://docs.ansible.com/ansible/latest/intro_dynamic_inventory.html) in order to reduce the hard-coded [module](http://docs.ansible.com/ansible/latest/modules.html) parameters and other values which could possibly change between invocations or projects. A further Ansible technique for ease of reuse, [Roles](http://docs.ansible.com/ansible/latest/playbooks_reuse_roles.html), should be a primary topic of attention for near-future enhancement/revision of this project.
 
 Several variables used by these Playbooks, such as passwords and API keys, are sensitive and should never be published in plaintext. These are encrypted using the [Ansible Vault](http://docs.ansible.com/ansible/latest/vault.html) utility, using a password that is stored in the `.vault-password` file in the project root. That `.vault-password` file, obviously, is and must be ignored by version control.
+
+Finally, note that each Playbook ends by replacing the tagging metadata associated with the Droplet. This allows the Ansible [dynamic inventories](http://docs.ansible.com/ansible/latest/intro_dynamic_inventory.html) to select just the individual Droplet to be addressed, without requiring maintenance of a static, perpetually-outdated static inventory file.
 
 ## Usage
 
@@ -49,7 +51,7 @@ Several variables used by these Playbooks, such as passwords and API keys, are s
 	2. Run `source ./droplet_functions.sh` if you've made any changes to that file. You **do not** need to reload the functions if you've modified variable files or Playbooks;
 	3. Run the [`create_and_provision_droplet`](#create_and_provision_droplet) function. That will run the Playbooks necessary to create, provision, and finalise your new Droplet, assigning a DigitalOcean-specified public IP(v4) address from which the Droplet is *immediately publicly accessible,* as well as the DigitalOcean Floating IP which you've correctly specified in the [`running_droplet_details`](#running_droplet_details) file. (Haven't you?)
 	4. Assuming the newly-running Droplet replaces one previously associated with that Floating IP, remove the old Droplet using the [`remove_droplet`](#remove_droplet) function;
-	5. Rename and re-tag the new Droplet to match your in-production standards using the [`rename_and_retag_droplet`](#rename_and_retag_droplet) function.
+	5. Rename and re-tag the new Droplet to match your in-production standards using the [`rename_and_retag_droplet`](#rename_and_retag_droplet) function; e.g., `rename_and_retag_droplet demo-active`.
 
 ## Variables and Variable Files
 
@@ -102,13 +104,13 @@ Used by the following Playbooks:
 * `update_floating_ip.yml`; and
 * `rename_and_retag_droplet.yml`.
 
-### `secret`
+#### `secret.vault.yml`
 
 As indicated by the name, this variable file contains sensitive information that must be kept secret; i.e., not published in a form susceptible to unauthorised cleartext access. As described earlier, this is accomplished via the `ansible_vault` utility.
 
 This file includes passwords and API/SSH keys used by each of the Playbooks.
 
-**NOTE:** This file will be renamed imminently to comply with the naming convention required by the Git pre-commit hook mentioned in Issue [#6](https://github.com/jdickey/docker-ansible-test/issues/6).
+This file is named to comply with the requirements of the [pre-commit hook](https://github.com/jdickey/docker-ansible-test/blob/master/pre-commit.example#L8) for protected-file naming. (This pattern will match any filename containing the sequence `vault` that also ends in `yml`; it *does not* match a file such as `.vault-password`, which appears to be a convention for naming `ansible-vault` password files.) We have chosen *not* to rename all variable files as explicit `.yml` files to highlight the distinction between this `ansible-vault`-protected file and non-secured files.
 
 ## Playbooks
 
@@ -118,7 +120,7 @@ Listed in the order in which they are normally used over an individual Droplet's
 
 Creates a new Droplet (or overwrites an existing one with the initial name), then associates the Droplet with a DigitalOcean Droplet tag indicating that it is a newly-created, not-yet-provisioned Droplet.
 
-Uses the variable files `secret` and `do_droplet_vars`.
+Uses the variable files `secret.vault.yml` and `do_droplet_vars`.
 
 ### `provision_droplet.yml`
 

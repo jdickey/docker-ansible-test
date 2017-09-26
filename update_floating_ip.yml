@@ -19,7 +19,7 @@
 - name: Reassign Floating IP to recently-created and -provisioned Droplet
   hosts: docker_up
   vars_files:
-    - secret
+    - secret.vault.yml
     - running_droplet_details
   remote_user: '{{ droplet_user_name }}'
   tasks:

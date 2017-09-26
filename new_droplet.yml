@@ -9,7 +9,7 @@
   connection: local
   hosts: localhost
   vars_files:
-    - secret
+    - secret.vault.yml
     - do_droplet_vars
   tasks:
     - name: Deploy new Droplet

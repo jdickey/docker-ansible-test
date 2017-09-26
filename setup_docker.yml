@@ -19,7 +19,7 @@
   hosts: provisioned
   remote_user: '{{ droplet_user_name }}'
   vars_files:
-    - secret
+    - secret.vault.yml
     - docker_app
     - running_droplet_details
 

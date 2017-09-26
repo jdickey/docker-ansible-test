@@ -2,10 +2,8 @@
 - name: Rename and re-tag Droplet after assigning Floating IP
   hosts: fip_set
   vars_files:
-    - secret # for droplet_user_name
+    - secret.vault.yml  # for droplet_user_name
     - running_droplet_details
-  vars:
-    new_droplet_name: '{{ final_tag_name }}-active'
   remote_user: '{{ droplet_user_name }}'
   tasks:
     - name: Rename Droplet based on final tag name
